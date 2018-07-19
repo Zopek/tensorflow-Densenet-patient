@@ -184,6 +184,15 @@ training_flag = tf.placeholder(tf.bool)
 learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 logits = DenseNet(x=batch_images, nb_blocks=nb_block, filters=growth_k, training=training_flag).model
+"""
+# 样本加权
+ratio = np.array([134181, 4044, 4320, 4794]) / 147339
+class_weight = tf.constant(ratio)
+weighted_logits = tf.mul(logits, class_weight)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=weighted_logits))
+# 可选函数
+tf.losses.sparse_softmax_cross_entropy(labels=label, logits=logits, weights=weights)
+"""
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits))
 
 """
