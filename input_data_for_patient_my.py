@@ -12,9 +12,10 @@ import time
 def get_dir(filepath):
 
 	dirs = os.listdir(filepath)
+	dirs = np.array(dirs)
 	perm0 = np.arange(len(dirs))
 	np.random.shuffle(perm0)
-	dirs = dirs[shuffle]
+	dirs = dirs[perm0]
 
 	return dirs
 
@@ -69,7 +70,8 @@ def train_next_batch(filepath, step, batch_size):
 
 def test_next_batch(filepath, step):
 
-	dirs = get_test_dir(filepath)
+	dirs = get_dir(filepath)
+	dirs = dirs[-3000:]
 	current_num = step * 300
 	for filename in dirs[current_num:(current_num + 300)]:
 		image = np.load(filepath + '/' + filename + '/image.npy')
