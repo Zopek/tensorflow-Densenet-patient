@@ -1,15 +1,13 @@
-# -*- coding: UTF-8 -*-
-
 import tensorflow as tf
 from tflearn.layers.conv import global_avg_pool
 # from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.contrib.layers import batch_norm, flatten
 from tensorflow.contrib.framework import arg_scope
-import input_data_for_patient_my as input_data
+import input_data_for_patient as input_data
 import numpy as np
 import time
 
-filepath = '/DATA/data/qyzheng/patient_image_4/3'
+filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4'
 # mnist = load_all_sets(filepath)
 
 # Hyperparameter
@@ -186,15 +184,6 @@ training_flag = tf.placeholder(tf.bool)
 learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 logits = DenseNet(x=batch_images, nb_blocks=nb_block, filters=growth_k, training=training_flag).model
-"""
-# 样本加权
-ratio = np.array([134181, 4044, 4320, 4794]) / 147339
-class_weight = tf.constant(ratio)
-weighted_logits = tf.mul(logits, class_weight)
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=weighted_logits))
-# 可选函数
-tf.losses.sparse_softmax_cross_entropy(labels=label, logits=logits, weights=weights)
-"""
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits))
 
 """
@@ -209,8 +198,18 @@ but, I'll use AdamOptimizer
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon)
 train = optimizer.minimize(cost)
 
-
+"""
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(label, 1))
+"""
+log_loc = tf.argmax(logits, 1)
+lab_loc = tf.argmax(label, 1)
+correct_prediction = tf.equal(log_loc, lab_loc)
+# error label
+err = np.array([0, 0, 0, 0])
+for i in range(300):
+    if correct_prediction[i] == False:
+        err[lab_loc[i]] += 1 
+err_label = tf.constant(err)
 """
 correct_prediction_two = tf.equal(tf.argmax(logits[:, 4:7], 1), tf.argmax(label[:, 4:7], 1))
 correct_prediction_thr = tf.equal(tf.argmax(logits[:, 7:11], 1), tf.argmax(label[:, 7:11], 1))
@@ -230,95 +229,31 @@ config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
 """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('./model')
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        saver.restore(sess, ckpt.model_checkpoint_path)
-    else:
-        sess.run(tf.global_variables_initializer())
+    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/model/model6/')
+    saver.restore(sess, ckpt.model_checkpoint_path)
 
-    merged = tf.summary.merge_all()
-    writer = tf.summary.FileWriter('./logs', sess.graph)
+    train_size, test_size = input_data.get_size(filepath)
+    print(train_size, ' ', test_size)
+    total_test_batch = int(test_size / 300)
 
-    global_step = 0
-    epoch_learning_rate = init_learning_rate
-    for epoch in range(total_epochs):
-        if epoch == (total_epochs * 0.5) or epoch == (total_epochs * 0.75):
-            epoch_learning_rate = epoch_learning_rate / 10
-
-        train_size, test_size = input_data.get_size(filepath)
-        total_train_batch = int(train_size / batch_size)
-        total_test_batch = int(test_size / 300)
-        # total_batch = int(mnist.train.num_examples / batch_size)
-
-        for step in range(total_train_batch):
-            # start_time = time.time()
-            batch_x, batch_y = input_data.train_next_batch(filepath, step, batch_size)
-            # batch_x, batch_y = mnist.train.next_batch(batch_size)
-            # print('load time is : ', time.time() - start_time)
-            train_feed_dict = {
-                x: batch_x,
-                label: batch_y,
-                learning_rate: epoch_learning_rate,
-                training_flag : True
-            }
-
-            _, loss = sess.run([train, cost], feed_dict=train_feed_dict)
-
-            if step % 50 == 0:
-                global_step += 50
-                train_summary, train_accuracy = sess.run([merged, accuracy], feed_dict=train_feed_dict)
-                # accuracy.eval(feed_dict=feed_dict)
-                print("Step:", step, "Loss:", loss, "Training accuracy:", train_accuracy)
-                writer.add_summary(train_summary, global_step=epoch)
-
-            """
-            if step  == total_train_batch - 1:
-                # test_time = time.time()
-                test_images, test_labels = input_data.test_next_batch(filepath, 1)
-                test_feed_dict = {
-                    x: test_images,
-                    label: test_labels,
-                    learning_rate: epoch_learning_rate,
-                    training_flag : False
-                }
-                # print('test time is : ', time.time() - test_time)
-            """
-            # print('step time is : ', time.time() - start_time)
-
-        for step in range(total_test_batch):
-            test_images, test_labels = input_data.test_next_batch(filepath, step)
-            test_feed_dict = {
-                x: test_images,
-                label: test_labels,
-                learning_rate: epoch_learning_rate,
-                training_flag : False
-            }
-            if step == 0:
-                accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-            else:
-                accuracy_rates += sess.run(accuracy, feed_dict=test_feed_dict)
-
-            if step == total_test_batch - 1:
-                print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
+    for step in range(total_test_batch):
+        test_images, test_labels = input_data.test_next_batch(filepath, step)
+        test_feed_dict = {
+            x: test_images,
+            label: test_labels,
+            learning_rate: init_learning_rate,
+            training_flag : False
+        }
+        if step == 0:
+            accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
+            err_labels = sess.run(err_label, feed_dict=test_feed_dict)
+        else:
+            accuracy_rates += sess.run(accuracy, feed_dict=test_feed_dict)
+            err_labels += sess.run(err_label, feed_dict=test_feed_dict)
             """
             if step % 5 == 0:
                 print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
             """
-        # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
-
-        # writer.add_summary(test_summary, global_step=epoch)
-        saver.save(sess=sess, save_path='./model/dense.ckpt')
-
-        """
-        test_images, test_labels = input_data.test_next_batch(filepath, 2)
-        test_feed_dict = {
-            x: test_images,
-            label: test_labels,
-            learning_rate: epoch_learning_rate,
-            training_flag : False
-        }
-        accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-        print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
-        """
-
-    saver.save(sess=sess, save_path='./model/dense.ckpt')
+    accuracy_rates /= total_test_batch
+    print('Test Accuracy =', accuracy_rates)
+    print('Test error label = ', err_labels)

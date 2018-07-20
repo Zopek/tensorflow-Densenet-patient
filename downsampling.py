@@ -37,9 +37,9 @@ for i in range(len(dirs)):
 	else:
 	"""
 	if int(label[0]) == 0:
-		if random.random() <= 0.02981048:
+		if random.random() <= 0.10221572:
 			oldpath = filepath + '/' + dirs[i]
-			newpath = '/DATA/data/qyzheng/patient_image_4/2/' + name[i]
+			newpath = '/DATA/data/qyzheng/patient_image_4/3/' + name[i]
 			shutil.copytree(oldpath,newpath)
 
 			if i%100 == 0:
