@@ -229,13 +229,15 @@ config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
 """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/model/model6/')
+    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/model/model7/')
     saver.restore(sess, ckpt.model_checkpoint_path)
 
     train_size, test_size = input_data.get_size(filepath)
     print(train_size, ' ', test_size)
     total_test_batch = int(test_size / 300)
 
+    accuracy_rates = 0
+    err_labels = np.array([0, 0, 0, 0])
     for step in range(total_test_batch):
         test_images, test_labels = input_data.test_next_batch(filepath, step)
         test_feed_dict = {
@@ -244,12 +246,15 @@ with tf.Session() as sess:
             learning_rate: init_learning_rate,
             training_flag : False
         }
-        if step == 0:
-            accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-            err_labels = sess.run(err_label, feed_dict=test_feed_dict)
-        else:
-            accuracy_rates += sess.run(accuracy, feed_dict=test_feed_dict)
-            err_labels += sess.run(err_label, feed_dict=test_feed_dict)
+
+        if step % 100 == 0:
+            print('step', step)
+
+        [lab, correct, accuracy_rate] = sess.run([lab_loc, correct_prediction, accuracy], feed_dict=test_feed_dict)
+        accuracy_rates += accuracy_rate
+        for i in range(correct.shape[0]):
+            if correct[i] == False:
+                err_labels[lab[i]] += 1
             """
             if step % 5 == 0:
                 print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))

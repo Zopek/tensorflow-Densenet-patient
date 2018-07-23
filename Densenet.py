@@ -9,7 +9,7 @@ import input_data_for_patient_my as input_data
 import numpy as np
 import time
 
-filepath = '/DATA/data/qyzheng/patient_image_4/3'
+filepath = '/DATA/data/qyzheng/patient_image_4/1'
 # mnist = load_all_sets(filepath)
 
 # Hyperparameter
@@ -28,7 +28,7 @@ weight_decay = 1e-4
 class_num = 4
 batch_size = 32
 
-total_epochs = 100
+total_epochs = 80
 
 
 def conv_layer(input, filter, kernel, stride=1, layer_name="conv"):

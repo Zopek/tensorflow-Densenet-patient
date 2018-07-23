@@ -22,7 +22,7 @@ def get_dir(filepath):
 def get_size(filepath):
 
 	dirs = get_dir(filepath)
-	test_size = 6000
+	test_size = 3000
 	train_size = len(dirs) - test_size
 
 	return train_size, test_size
@@ -71,7 +71,7 @@ def train_next_batch(filepath, step, batch_size):
 def test_next_batch(filepath, step):
 
 	dirs = get_dir(filepath)
-	dirs = dirs[-6000:]
+	dirs = dirs[-3000:]
 	current_num = step * 300
 	for filename in dirs[current_num:(current_num + 300)]:
 		image = np.load(filepath + '/' + filename + '/image.npy')

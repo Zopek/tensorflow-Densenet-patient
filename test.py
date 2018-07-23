@@ -5,7 +5,7 @@
 import input_data_for_patient_my as input_data
 import numpy as np
 
-filepath = '/DATA/data/qyzheng/patient_image_4/3'
+filepath = '/DATA/data/qyzheng/patient_image_4/1'
 train_size, test_size = input_data.get_size(filepath)
 dirs = input_data.get_dir(filepath)
 

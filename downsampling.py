@@ -7,7 +7,7 @@ import random
 
 def get_dir(filepath):
 
-	for h in range(1,5):
+	for h in range(1,4):
 		dirs = os.listdir(filepath + '/' + str(h))
 		for i in range(len(dirs)):
 			dirs_next = os.listdir(filepath + '/' + str(h) + '/' + dirs[i])
@@ -37,10 +37,14 @@ for i in range(len(dirs)):
 	else:
 	"""
 	if int(label[0]) == 0:
-		if random.random() <= 0.10221572:
+		if random.random() <= 0.15221572:
 			oldpath = filepath + '/' + dirs[i]
-			newpath = '/DATA/data/qyzheng/patient_image_4/3/' + name[i]
+			newpath = '/DATA/data/qyzheng/patient_image_4/1/' + name[i]
 			shutil.copytree(oldpath,newpath)
+	else:
+		oldpath = filepath + '/' + dirs[i]
+		newpath = '/DATA/data/qyzheng/patient_image_4/1/' + name[i]
+		shutil.copytree(oldpath,newpath)
 
-			if i%100 == 0:
-				print(i, ' ', label)
+	if i%100 == 0:
+		print(i, ' ', label)
