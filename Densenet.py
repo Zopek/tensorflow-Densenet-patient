@@ -230,11 +230,8 @@ config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
 """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('./model')
-    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
-        saver.restore(sess, ckpt.model_checkpoint_path)
-    else:
-        sess.run(tf.global_variables_initializer())
+    
+    sess.run(tf.global_variables_initializer())
 
     merged = tf.summary.merge_all()
     writer = tf.summary.FileWriter('./logs', sess.graph)
