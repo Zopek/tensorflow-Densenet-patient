@@ -4,6 +4,7 @@ import random
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
 import input_data_for_patient as input_data
+import os 
 
 class Smote:
     def __init__(self,samples,N=100,k=5):
@@ -33,20 +34,22 @@ class Smote:
             dif=self.samples[nnarray[nn]]-self.samples[i]
             gap=random.random()
             synthetic=self.samples[i]+gap*dif
-            filename = '/DATA/data/qyzheng/patient_image_4/synthetic/0/synthetic_0_' + str(self.newindex)
+            filename = '/DATA/data/qyzheng/patient_image_4/synthetic/2/synthetic_2_' + str(self.newindex)
             os.makedirs(filename)
-            numpy.save('image.npy', synthetic)
+            np.save((filename + '/image.npy'), synthetic)
             self.newindex+=1
 
+            if self.newindex % 200 == 0:
+                print(self.newindex)
+
 filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4'
-filepath_my = '/DATA/data/qyzheng/patient_image_4/synthetic/0'
-dirs = get_train_dir(filepath)
+dirs = input_data.get_train_dir(filepath)
 size = 0
 
 for i in range(len(dirs)):
 
     label = np.load(filepath + '/' + dirs[i] + '/label.npy')
-    if int(label[0]) == 1:
+    if int(label[0]) == 3:
         image = np.load(filepath + '/' + dirs[i] + '/image.npy')
         image = image.reshape((1, -1))
         if size == 0:
@@ -55,6 +58,9 @@ for i in range(len(dirs)):
         else:
             images = np.vstack((images, image))
             size += 1
+        if size % 200 == 0:
+            print('size', size)
 
 print('size', size)
 s=Smote(images,N=200)
+s.over_sampling()

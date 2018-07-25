@@ -2,6 +2,25 @@
 
 # import tensorflow as tf
 
+import input_data_for_patient as input_data
+import numpy as np
+
+filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4'
+train_size, test_size = input_data.get_size(filepath)
+dirs = input_data.get_train_dir(filepath)
+
+labels = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+
+for filename in dirs:
+
+	label = np.load(filepath + '/' + filename + '/label.npy')
+	for i in range(4):
+		labels[i][int(label[i])] += 1
+
+
+print(labels)
+
+"""
 import input_data_for_patient_my as input_data
 import numpy as np
 
@@ -20,6 +39,7 @@ for filename in dirs:
 
 
 print(labels)
+"""
 """
 for filename in train_dirs:
 

@@ -28,7 +28,7 @@ weight_decay = 1e-4
 class_num = 4
 batch_size = 32
 
-total_epochs = 80
+total_epochs = 50
 
 
 def conv_layer(input, filter, kernel, stride=1, layer_name="conv"):

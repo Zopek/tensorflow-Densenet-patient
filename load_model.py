@@ -229,7 +229,7 @@ config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
 """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/model/model7/')
+    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/model/model8/')
     saver.restore(sess, ckpt.model_checkpoint_path)
 
     train_size, test_size = input_data.get_size(filepath)

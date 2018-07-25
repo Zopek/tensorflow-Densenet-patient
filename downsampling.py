@@ -30,21 +30,16 @@ for i in range(len(dirs)):
 	label = np.load(filepath + '/' + dirs[i] + '/label.npy')
 	"""
 	if int(label[0]) == 0:
-		if random.random() <= 0.05479452:
+		if random.random() <= 0.45:
 			oldpath = filepath + '/' + dirs[i]
-			newpath = '/DATA/data/qyzheng/patient_image_4/1/' + name[i]
+			newpath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/0/' + name[i]
 			shutil.copytree(oldpath,newpath)
-	else:
 	"""
-	if int(label[0]) == 0:
-		if random.random() <= 0.15221572:
-			oldpath = filepath + '/' + dirs[i]
-			newpath = '/DATA/data/qyzheng/patient_image_4/1/' + name[i]
-			shutil.copytree(oldpath,newpath)
-	else:
+
+	if int(label[0]) == 3s:
 		oldpath = filepath + '/' + dirs[i]
-		newpath = '/DATA/data/qyzheng/patient_image_4/1/' + name[i]
+		newpath = '/DATA/data/qyzheng/patient_image_4/train/3/' + name[i]
 		shutil.copytree(oldpath,newpath)
 
-	if i%100 == 0:
+	if i%5000 == 0:
 		print(i, ' ', label)
