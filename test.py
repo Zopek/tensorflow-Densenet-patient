@@ -1,7 +1,34 @@
 # -*- coding: UTF-8 -*-
 
 # import tensorflow as tf
+import os
+import numpy as np
 
+def get_dir(filepath):
+
+	for h in range(4):
+		dirs = os.listdir(filepath + '/' + str(h))
+		for i in range(len(dirs)):
+			if h == 0 and i == 0:
+				dirs_list = [str(h) + '/' + dirs[i]]
+			else:
+				dirs_list.append(str(h) + '/' + dirs[i])
+
+	dirs_list = np.array(dirs_list)
+	print(dirs_list[-10:])
+
+	perm0 = np.arange(len(dirs_list))
+	np.random.shuffle(perm0)
+	dirs_list = dirs_list[perm0]
+	print(dirs_list[-10:])
+
+	return dirs_list
+
+filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/synthetic'
+
+dirs = get_dir(filepath)
+
+"""
 import input_data_for_patient as input_data
 import numpy as np
 
@@ -19,7 +46,7 @@ for filename in dirs:
 
 
 print(labels)
-
+"""
 """
 import input_data_for_patient_my as input_data
 import numpy as np

@@ -5,19 +5,19 @@ from tflearn.layers.conv import global_avg_pool
 # from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.contrib.layers import batch_norm, flatten
 from tensorflow.contrib.framework import arg_scope
-import input_data_for_patient_my as input_data
+import input_data as input_data
 import numpy as np
 import time
 
-filepath = '/DATA/data/qyzheng/patient_image_4/1'
+filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train'
 # mnist = load_all_sets(filepath)
-
+# print('for synthetic')
 # Hyperparameter
-growth_k = 24
+growth_k = 32
 nb_block = 2 # how many (dense block + Transition Layer) ?
 init_learning_rate = 1e-4
 epsilon = 1e-8 # AdamOptimizer epsilon
-dropout_rate = 0.2
+dropout_rate = 0.3
 # dropout_rate = 0.4
 
 # Momentum Optimizer will use
@@ -26,9 +26,9 @@ weight_decay = 1e-4
 
 # Label & batch_size
 class_num = 4
-batch_size = 32
+batch_size = 16
 
-total_epochs = 50
+total_epochs = 100
 
 
 def conv_layer(input, filter, kernel, stride=1, layer_name="conv"):
@@ -231,25 +231,33 @@ session = tf.Session(config=config)
 """
 with tf.Session() as sess:
     
-    sess.run(tf.global_variables_initializer())
 
+    ckpt = tf.train.get_checkpoint_state('/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model')
+    if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
+        saver.restore(sess, ckpt.model_checkpoint_path)
+    else:
+        sess.run(tf.global_variables_initializer())
+    """
+    sess.run(tf.global_variables_initializer())
+    """
     merged = tf.summary.merge_all()
     writer = tf.summary.FileWriter('./logs', sess.graph)
 
     global_step = 0
     epoch_learning_rate = init_learning_rate
+    dirs = input_data.get_dir(filepath)
     for epoch in range(total_epochs):
         if epoch == (total_epochs * 0.5) or epoch == (total_epochs * 0.75):
             epoch_learning_rate = epoch_learning_rate / 10
 
-        train_size, test_size = input_data.get_size(filepath)
+        train_size, test_size = input_data.get_size(dirs)
         total_train_batch = int(train_size / batch_size)
         total_test_batch = int(test_size / 300)
         # total_batch = int(mnist.train.num_examples / batch_size)
 
         for step in range(total_train_batch):
             # start_time = time.time()
-            batch_x, batch_y = input_data.train_next_batch(filepath, step, batch_size)
+            batch_x, batch_y = input_data.train_next_batch(filepath, step, batch_size, dirs)
             # batch_x, batch_y = mnist.train.next_batch(batch_size)
             # print('load time is : ', time.time() - start_time)
             train_feed_dict = {
@@ -283,7 +291,7 @@ with tf.Session() as sess:
             # print('step time is : ', time.time() - start_time)
 
         for step in range(total_test_batch):
-            test_images, test_labels = input_data.test_next_batch(filepath, step)
+            test_images, test_labels = input_data.test_next_batch(filepath, step, dirs)
             test_feed_dict = {
                 x: test_images,
                 label: test_labels,

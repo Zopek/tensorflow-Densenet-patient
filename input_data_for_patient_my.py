@@ -9,10 +9,22 @@ import sys
 import numpy as np
 import time
 
-def get_dir(filepath):
+print('for 1')
+
+def get_train_dir(filepath):
 
 	dirs = os.listdir(filepath)
-	dirs = np.array(dirs)
+	dirs = np.array(dirs[:-3000])
+	perm0 = np.arange(len(dirs))
+	np.random.shuffle(perm0)
+	dirs = dirs[perm0]
+
+	return dirs
+
+def get_test_dir(filepath):
+
+	dirs = os.listdir(filepath)
+	dirs = np.array(dirs[-3000:])
 	perm0 = np.arange(len(dirs))
 	np.random.shuffle(perm0)
 	dirs = dirs[perm0]
@@ -21,9 +33,8 @@ def get_dir(filepath):
 
 def get_size(filepath):
 
-	dirs = get_dir(filepath)
-	test_size = 3000
-	train_size = len(dirs) - test_size
+	test_size = len(get_test_dir(filepath))
+	train_size = len(get_train_dir(filepath))
 
 	return train_size, test_size
 
@@ -48,7 +59,7 @@ def label_convert(label):
 
 def train_next_batch(filepath, step, batch_size):
 
-	dirs = get_dir(filepath)
+	dirs = get_train_dir(filepath)
 	current_num = step * batch_size
 
 	for filename in dirs[current_num:(current_num + batch_size)]:
@@ -70,8 +81,7 @@ def train_next_batch(filepath, step, batch_size):
 
 def test_next_batch(filepath, step):
 
-	dirs = get_dir(filepath)
-	dirs = dirs[-3000:]
+	dirs = get_test_dir(filepath)
 	current_num = step * 300
 	for filename in dirs[current_num:(current_num + 300)]:
 		image = np.load(filepath + '/' + filename + '/image.npy')
