@@ -1,0 +1,5 @@
+/DATA/data/qyzheng/patient_image_4/1 来源于 /DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4/1,2,3 标签为0的随机选取10000+， 标签为1，2，3的全部选取
+使用该训练集训练， 使用 /DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4/4 测试
+
+/DATA/data/qyzheng/patient_image_4/train 来源于 /DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4/1,2,3  其中train/1,2,3中分别为标签为1，2，3的所有数据  train/synthetic为合成数据加原始数据，按标签存放
+使用该训练集训练， 使用 /DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4/4 测试

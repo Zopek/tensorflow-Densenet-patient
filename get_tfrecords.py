@@ -4,7 +4,7 @@ import os
 import tensorflow as tf 
 import numpy as np
 
-filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train'
+filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test'
 
 
 def get_dir(filepath):
@@ -28,7 +28,7 @@ def label_convert(label):
 
 	return labels.reshape((1, -1)) 
 
-writer = tf.python_io.TFRecordWriter(filepath + '/train.tfrecords')
+writer = tf.python_io.TFRecordWriter(filepath + '/test.tfrecords')
 dirs = get_dir(filepath)
 for filename in dirs:
 

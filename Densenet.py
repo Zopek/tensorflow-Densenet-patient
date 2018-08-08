@@ -5,19 +5,23 @@ from tflearn.layers.conv import global_avg_pool
 # from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.contrib.layers import batch_norm, flatten
 from tensorflow.contrib.framework import arg_scope
-import input_data as input_data
+import read_data
 import numpy as np
 import time
 
-filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train'
+train_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/train.tfrecords"
+test_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test/test.tfrecords"
+
+train_size = 19511
+test_size = 1060
 # mnist = load_all_sets(filepath)
 # print('for synthetic')
 # Hyperparameter
-growth_k = 32
+growth_k = 24
 nb_block = 2 # how many (dense block + Transition Layer) ?
 init_learning_rate = 1e-4
 epsilon = 1e-8 # AdamOptimizer epsilon
-dropout_rate = 0.3
+dropout_rate = 0.2
 # dropout_rate = 0.4
 
 # Momentum Optimizer will use
@@ -25,8 +29,8 @@ nesterov_momentum = 0.9
 weight_decay = 1e-4
 
 # Label & batch_size
-class_num = 4
-batch_size = 16
+class_num = 2
+batch_size = 32
 
 total_epochs = 100
 
@@ -143,14 +147,13 @@ class DenseNet():
         x = Max_Pooling(x, pool_size=[3,3], stride=2)
 
 
-        """
-        for i in range(self.nb_blocks) :
-            # 6 -> 12 -> 48
-            x = self.dense_block(input_x=x, nb_layers=6, layer_name='dense_'+str(i))
-            x = self.transition_layer(x, scope='trans_'+str(i))
+        # """
+        # for i in range(self.nb_blocks) :
+        #     # 6 -> 12 -> 48
+        #     x = self.dense_block(input_x=x, nb_layers=6, layer_name='dense_'+str(i))
+        #     x = self.transition_layer(x, scope='trans_'+str(i))
+        # """
 
-
-        """
         x = self.dense_block(input_x=x, nb_layers=6, layer_name='dense_1')
         x = self.transition_layer(x, scope='trans_1')
 
@@ -178,7 +181,7 @@ class DenseNet():
 x = tf.placeholder(tf.float32, shape=[None, 50176])
 batch_images = tf.reshape(x, [-1, 224, 224, 1])
 
-label = tf.placeholder(tf.float32, shape=[None, 4])
+label = tf.placeholder(tf.float32, shape=[None, 2])
 
 training_flag = tf.placeholder(tf.bool)
 
@@ -186,36 +189,38 @@ training_flag = tf.placeholder(tf.bool)
 learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 logits = DenseNet(x=batch_images, nb_blocks=nb_block, filters=growth_k, training=training_flag).model
-"""
-# 样本加权
-ratio = np.array([134181, 4044, 4320, 4794]) / 147339
-class_weight = tf.constant(ratio)
-weighted_logits = tf.mul(logits, class_weight)
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=weighted_logits))
-# 可选函数
-tf.losses.sparse_softmax_cross_entropy(labels=label, logits=logits, weights=weights)
-"""
+
+# """
+# # 样本加权
+# ratio = np.array([134181, 4044, 4320, 4794]) / 147339
+# class_weight = tf.constant(ratio)
+# weighted_logits = tf.mul(logits, class_weight)
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=weighted_logits))
+# # 可选函数
+# tf.losses.sparse_softmax_cross_entropy(labels=label, logits=logits, weights=weights)
+# """
+
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits))
 
-"""
-l2_loss = tf.add_n([tf.nn.l2_loss(var) for var in tf.trainable_variables()])
-optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=nesterov_momentum, use_nesterov=True)
-train = optimizer.minimize(cost + l2_loss * weight_decay)
-In paper, use MomentumOptimizer
-init_learning_rate = 0.1
-but, I'll use AdamOptimizer
-"""
+# """
+# l2_loss = tf.add_n([tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+# optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=nesterov_momentum, use_nesterov=True)
+# train = optimizer.minimize(cost + l2_loss * weight_decay)
+# In paper, use MomentumOptimizer
+# init_learning_rate = 0.1
+# but, I'll use AdamOptimizer
+# """
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon)
 train = optimizer.minimize(cost)
 
 
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(label, 1))
-"""
-correct_prediction_two = tf.equal(tf.argmax(logits[:, 4:7], 1), tf.argmax(label[:, 4:7], 1))
-correct_prediction_thr = tf.equal(tf.argmax(logits[:, 7:11], 1), tf.argmax(label[:, 7:11], 1))
-correct_prediction_fou = tf.equal(tf.argmax(logits[:, 11:14], 1), tf.argmax(label[:, 11:14], 1))
-"""
+# """
+# correct_prediction_two = tf.equal(tf.argmax(logits[:, 4:7], 1), tf.argmax(label[:, 4:7], 1))
+# correct_prediction_thr = tf.equal(tf.argmax(logits[:, 7:11], 1), tf.argmax(label[:, 7:11], 1))
+# correct_prediction_fou = tf.equal(tf.argmax(logits[:, 11:14], 1), tf.argmax(label[:, 11:14], 1))
+# """
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 tf.summary.scalar('loss', cost)
@@ -223,12 +228,12 @@ tf.summary.scalar('accuracy', accuracy)
 
 saver = tf.train.Saver(tf.global_variables())
 
-"""
-# delete?
-config = tf.ConfigProto() 
-config.gpu_options.allow_growth = True 
-session = tf.Session(config=config)
-"""
+# """
+# # delete?
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+# session = tf.Session(config=config)
+# """
 with tf.Session() as sess:
     
 
@@ -237,27 +242,25 @@ with tf.Session() as sess:
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
         sess.run(tf.global_variables_initializer())
-    """
-    sess.run(tf.global_variables_initializer())
-    """
+
+    threads = tf.train.start_queue_runners(sess=sess)
+
     merged = tf.summary.merge_all()
     writer = tf.summary.FileWriter('./logs', sess.graph)
 
     global_step = 0
     epoch_learning_rate = init_learning_rate
-    dirs = input_data.get_dir(filepath)
     for epoch in range(total_epochs):
         if epoch == (total_epochs * 0.5) or epoch == (total_epochs * 0.75):
             epoch_learning_rate = epoch_learning_rate / 10
 
-        train_size, test_size = input_data.get_size(dirs)
         total_train_batch = int(train_size / batch_size)
-        total_test_batch = int(test_size / 300)
+        total_test_batch = int(test_size / batch_size)
         # total_batch = int(mnist.train.num_examples / batch_size)
 
         for step in range(total_train_batch):
             # start_time = time.time()
-            batch_x, batch_y = input_data.train_next_batch(filepath, step, batch_size, dirs)
+            batch_x, batch_y = sess.run(read_data.next_batch(train_filename, batch_size))
             # batch_x, batch_y = mnist.train.next_batch(batch_size)
             # print('load time is : ', time.time() - start_time)
             train_feed_dict = {
@@ -276,22 +279,22 @@ with tf.Session() as sess:
                 print("Step:", step, "Loss:", loss, "Training accuracy:", train_accuracy)
                 writer.add_summary(train_summary, global_step=epoch)
 
-            """
-            if step  == total_train_batch - 1:
-                # test_time = time.time()
-                test_images, test_labels = input_data.test_next_batch(filepath, 1)
-                test_feed_dict = {
-                    x: test_images,
-                    label: test_labels,
-                    learning_rate: epoch_learning_rate,
-                    training_flag : False
-                }
-                # print('test time is : ', time.time() - test_time)
-            """
+            # """
+            # if step  == total_train_batch - 1:
+            #     # test_time = time.time()
+            #     test_images, test_labels = input_data.test_next_batch(filepath, 1)
+            #     test_feed_dict = {
+            #         x: test_images,
+            #         label: test_labels,
+            #         learning_rate: epoch_learning_rate,
+            #         training_flag : False
+            #     }
+            #     # print('test time is : ', time.time() - test_time)
+            # """
             # print('step time is : ', time.time() - start_time)
 
         for step in range(total_test_batch):
-            test_images, test_labels = input_data.test_next_batch(filepath, step, dirs)
+            test_images, test_labels = sess.run(read_data.next_batch(test_filename, batch_size))
             test_feed_dict = {
                 x: test_images,
                 label: test_labels,
@@ -305,25 +308,25 @@ with tf.Session() as sess:
 
             if step == total_test_batch - 1:
                 print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
-            """
-            if step % 5 == 0:
-                print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
-            """
+            # """
+            # if step % 5 == 0:
+            #     print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
+            # """
         # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
 
         # writer.add_summary(test_summary, global_step=epoch)
         saver.save(sess=sess, save_path='./model/dense.ckpt')
 
-        """
-        test_images, test_labels = input_data.test_next_batch(filepath, 2)
-        test_feed_dict = {
-            x: test_images,
-            label: test_labels,
-            learning_rate: epoch_learning_rate,
-            training_flag : False
-        }
-        accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-        print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
-        """
+        # """
+        # test_images, test_labels = input_data.test_next_batch(filepath, 2)
+        # test_feed_dict = {
+        #     x: test_images,
+        #     label: test_labels,
+        #     learning_rate: epoch_learning_rate,
+        #     training_flag : False
+        # }
+        # accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
+        # print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
+        # """
 
     saver.save(sess=sess, save_path='./model/dense.ckpt')
