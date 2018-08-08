@@ -3,11 +3,12 @@ from tflearn.layers.conv import global_avg_pool
 # from tensorflow.examples.tutorials.mnist import input_data
 from tensorflow.contrib.layers import batch_norm, flatten
 from tensorflow.contrib.framework import arg_scope
-import input_data_for_patient as input_data
+import read_data
 import numpy as np
 import time
 
 filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4'
+train_filename = ''
 # mnist = load_all_sets(filepath)
 
 # Hyperparameter
@@ -23,7 +24,7 @@ nesterov_momentum = 0.9
 weight_decay = 1e-4
 
 # Label & batch_size
-class_num = 4
+class_num = 2
 batch_size = 32
 
 total_epochs = 100
@@ -176,7 +177,7 @@ class DenseNet():
 x = tf.placeholder(tf.float32, shape=[None, 50176])
 batch_images = tf.reshape(x, [-1, 224, 224, 1])
 
-label = tf.placeholder(tf.float32, shape=[None, 4])
+label = tf.placeholder(tf.float32, shape=[None, class_num])
 
 training_flag = tf.placeholder(tf.bool)
 
@@ -186,21 +187,21 @@ learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 logits = DenseNet(x=batch_images, nb_blocks=nb_block, filters=growth_k, training=training_flag).model
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=label, logits=logits))
 
-"""
-l2_loss = tf.add_n([tf.nn.l2_loss(var) for var in tf.trainable_variables()])
-optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=nesterov_momentum, use_nesterov=True)
-train = optimizer.minimize(cost + l2_loss * weight_decay)
-In paper, use MomentumOptimizer
-init_learning_rate = 0.1
-but, I'll use AdamOptimizer
-"""
+# """
+# l2_loss = tf.add_n([tf.nn.l2_loss(var) for var in tf.trainable_variables()])
+# optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=nesterov_momentum, use_nesterov=True)
+# train = optimizer.minimize(cost + l2_loss * weight_decay)
+# In paper, use MomentumOptimizer
+# init_learning_rate = 0.1
+# but, I'll use AdamOptimizer
+# """
 
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, epsilon=epsilon)
 train = optimizer.minimize(cost)
 
-"""
-correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(label, 1))
-"""
+# """
+# correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(label, 1))
+# """
 log_loc = tf.argmax(logits, 1)
 lab_loc = tf.argmax(label, 1)
 correct_prediction = tf.equal(log_loc, lab_loc)
@@ -210,11 +211,11 @@ for i in range(300):
     if correct_prediction[i] == False:
         err[lab_loc[i]] += 1 
 err_label = tf.constant(err)
-"""
-correct_prediction_two = tf.equal(tf.argmax(logits[:, 4:7], 1), tf.argmax(label[:, 4:7], 1))
-correct_prediction_thr = tf.equal(tf.argmax(logits[:, 7:11], 1), tf.argmax(label[:, 7:11], 1))
-correct_prediction_fou = tf.equal(tf.argmax(logits[:, 11:14], 1), tf.argmax(label[:, 11:14], 1))
-"""
+# """
+# correct_prediction_two = tf.equal(tf.argmax(logits[:, 4:7], 1), tf.argmax(label[:, 4:7], 1))
+# correct_prediction_thr = tf.equal(tf.argmax(logits[:, 7:11], 1), tf.argmax(label[:, 7:11], 1))
+# correct_prediction_fou = tf.equal(tf.argmax(logits[:, 11:14], 1), tf.argmax(label[:, 11:14], 1))
+# """
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 tf.summary.scalar('loss', cost)
@@ -222,24 +223,25 @@ tf.summary.scalar('accuracy', accuracy)
 
 saver = tf.train.Saver(tf.global_variables())
 
-"""
-# delete?
-config = tf.ConfigProto() 
-config.gpu_options.allow_growth = True 
-session = tf.Session(config=config)
-"""
+# """
+# # delete?
+# config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+# session = tf.Session(config=config)
+# """
 with tf.Session() as sess:
     ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/Tensorflow/model')
     saver.restore(sess, ckpt.model_checkpoint_path)
 
     train_size, test_size = input_data.get_size(filepath)
     print(train_size, ' ', test_size)
-    total_test_batch = int(test_size / 300)
+    total_test_batch = int(test_size / batch_size)
 
     accuracy_rates = 0
-    err_labels = np.array([0, 0, 0, 0])
+    # err_labels = np.array([0, 0, 0, 0])
+    writer = tf.python_io.TFRecordWriter(filepath + '/next.tfrecords')
     for step in range(total_test_batch):
-        test_images, test_labels = input_data.test_next_batch(filepath, step)
+        test_images, test_labels, test_labels_mul = read_data.next_batch(train_filename, batch_size)
         test_feed_dict = {
             x: test_images,
             label: test_labels,
@@ -250,15 +252,29 @@ with tf.Session() as sess:
         if step % 100 == 0:
             print('step', step)
 
-        [lab, correct, accuracy_rate] = sess.run([lab_loc, correct_prediction, accuracy], feed_dict=test_feed_dict)
+        predict, accuracy_rate = sess.run([log_loc, accuracy], feed_dict=test_feed_dict)
         accuracy_rates += accuracy_rate
-        for i in range(correct.shape[0]):
-            if correct[i] == False:
-                err_labels[lab[i]] += 1
-            """
-            if step % 5 == 0:
-                print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
-            """
+
+        for i in range(len(predict)):
+            if predict[i] == 1:
+                image_bytes = test_images.tobytes()
+                label_bytes = test_labels.tobytes()
+                labels_mul_bytes = test_labels_mul.tobytes()
+
+                example = tf.train.Example(features=tf.train.Features(feature={
+                    "label_mul": tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_bytes])),
+                    "label": tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_bytes])),
+                    "image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_bytes]))
+                }))
+
+                writer.write(example.SerializeToString())
+    writer.close()
+        # [lab, correct, accuracy_rate] = sess.run([lab_loc, correct_prediction, accuracy], feed_dict=test_feed_dict)
+        # accuracy_rates += accuracy_rate
+        # for i in range(correct.shape[0]):
+        #     if correct[i] == False:
+        #         err_labels[lab[i]] += 1
+
     accuracy_rates /= total_test_batch
     print('Test Accuracy =', accuracy_rates)
-    print('Test error label = ', err_labels)
+    # print('Test error label = ', err_labels)

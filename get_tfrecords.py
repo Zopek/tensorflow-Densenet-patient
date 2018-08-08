@@ -28,6 +28,13 @@ def label_convert(label):
 
 	return labels.reshape((1, -1)) 
 
+def multi_label_convert(label):
+
+	labels = np.array([0, 0, 0, 0])
+	labels[int(label[0])] = 1
+
+	return labels.reshape((1, -1))
+
 writer = tf.python_io.TFRecordWriter(filepath + '/test.tfrecords')
 dirs = get_dir(filepath)
 for filename in dirs:
@@ -37,10 +44,13 @@ for filename in dirs:
 	image_bytes = image.tobytes()
 
 	label = np.load(filepath + '/' + filename + '/label.npy')
+	label_mul = multi_label_convert(label)
+	label_mul_bytes = label_mul.tobytes()
 	label = label_convert(label)
 	label_bytes = label.tobytes()
 
 	example = tf.train.Example(features=tf.train.Features(feature={
+		"label_mul": tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_mul_bytes])),
 		"label": tf.train.Feature(bytes_list=tf.train.BytesList(value=[label_bytes])),
 		"image": tf.train.Feature(bytes_list=tf.train.BytesList(value=[image_bytes]))
 		}))

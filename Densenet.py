@@ -260,7 +260,7 @@ with tf.Session() as sess:
 
         for step in range(total_train_batch):
             # start_time = time.time()
-            batch_x, batch_y = sess.run(read_data.next_batch(train_filename, batch_size))
+            batch_x, batch_y, _ = sess.run(read_data.next_batch(train_filename, batch_size))
             # batch_x, batch_y = mnist.train.next_batch(batch_size)
             # print('load time is : ', time.time() - start_time)
             train_feed_dict = {
@@ -294,7 +294,7 @@ with tf.Session() as sess:
             # print('step time is : ', time.time() - start_time)
 
         for step in range(total_test_batch):
-            test_images, test_labels = sess.run(read_data.next_batch(test_filename, batch_size))
+            test_images, test_labels, _ = sess.run(read_data.next_batch(test_filename, batch_size))
             test_feed_dict = {
                 x: test_images,
                 label: test_labels,
