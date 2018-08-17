@@ -181,7 +181,7 @@ class DenseNet():
 x = tf.placeholder(tf.float32, shape=[None, 50176])
 batch_images = tf.reshape(x, [-1, 224, 224, 1])
 
-label = tf.placeholder(tf.float32, shape=[None, 2])
+label = tf.placeholder(tf.float32, shape=[None, class_num])
 
 training_flag = tf.placeholder(tf.bool)
 
@@ -237,7 +237,7 @@ saver = tf.train.Saver(tf.global_variables())
 with tf.Session() as sess:
     
 
-    ckpt = tf.train.get_checkpoint_state('/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model')
+    ckpt = tf.train.get_checkpoint_state('/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1')
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
@@ -315,7 +315,7 @@ with tf.Session() as sess:
         # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
 
         # writer.add_summary(test_summary, global_step=epoch)
-        saver.save(sess=sess, save_path='./model/dense.ckpt')
+        saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1/dense.ckpt')
 
         # """
         # test_images, test_labels = input_data.test_next_batch(filepath, 2)
@@ -329,4 +329,4 @@ with tf.Session() as sess:
         # print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
         # """
 
-    saver.save(sess=sess, save_path='./model/dense.ckpt')
+    saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1/dense.ckpt')

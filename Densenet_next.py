@@ -9,8 +9,8 @@ import read_data
 import numpy as np
 import time
 
-train_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/train.tfrecords"
-test_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test/test.tfrecords"
+train_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/train_next.tfrecords"
+test_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test/test_next.tfrecords"
 
 train_size = 19511
 test_size = 1060
@@ -234,7 +234,7 @@ saver = tf.train.Saver(tf.global_variables())
 # session = tf.Session(config=config)
 # """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model')
+    ckpt = tf.train.get_checkpoint_state('/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model2')
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
@@ -312,7 +312,7 @@ with tf.Session() as sess:
         # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
 
         # writer.add_summary(test_summary, global_step=epoch)
-        saver.save(sess=sess, save_path='./model/dense.ckpt')
+        saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model2/dense.ckpt')
 
         # """
         # test_images, test_labels = input_data.test_next_batch(filepath, 2)
@@ -326,4 +326,4 @@ with tf.Session() as sess:
         # print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
         # """
 
-    saver.save(sess=sess, save_path='./model/dense.ckpt')
+    saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model2/dense.ckpt')
