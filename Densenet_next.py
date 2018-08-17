@@ -12,8 +12,8 @@ import time
 train_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/train/train_next.tfrecords"
 test_filename = "/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test/test_next.tfrecords"
 
-train_size = 19511
-test_size = 1060
+train_size = 9672
+test_size = 520
 # mnist = load_all_sets(filepath)
 # print('for synthetic')
 # Hyperparameter

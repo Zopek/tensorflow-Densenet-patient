@@ -259,8 +259,9 @@ with tf.Session() as sess:
         # total_batch = int(mnist.train.num_examples / batch_size)
 
         for step in range(total_train_batch):
+            print("start")
             # start_time = time.time()
-            batch_x, batch_y, _ = sess.run(read_data.next_batch(train_filename, batch_size))
+            batch_x, batch_y, _ = sess.run([read_data.next_batch(train_filename, batch_size)])
             # batch_x, batch_y = mnist.train.next_batch(batch_size)
             # print('load time is : ', time.time() - start_time)
             train_feed_dict = {
@@ -269,7 +270,7 @@ with tf.Session() as sess:
                 learning_rate: epoch_learning_rate,
                 training_flag : True
             }
-
+            print("read OK")
             _, loss = sess.run([train, cost], feed_dict=train_feed_dict)
 
             if step % 50 == 0:
