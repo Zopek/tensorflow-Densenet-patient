@@ -5,7 +5,7 @@ import tensorflow as tf
 def read_and_decode(filename):
 
 
-	filename_queue = tf.train.string_input_producer([filename])
+	filename_queue = tf.train.string_input_producer([filename], shuffle=False, num_epochs=100)
 
 	reader = tf.TFRecordReader()
 	_, serialized_example = reader.read(filename_queue)
@@ -16,16 +16,34 @@ def read_and_decode(filename):
 		})
 
 	image = tf.decode_raw(features['image'], tf.float32)
-	image = tf.reshape(image, [224, 224, 1])
-	label_mul = tf.cast(features['label_mul'], tf.float32)
-	label = tf.cast(features['label'], tf.float32)
+	image = tf.reshape(image, [50176,])
+	#print(image.shap
+	label_mul = tf.decode_raw(features['label_mul'], tf.float32)
+	print('label_mul is', type(label_mul))
+	label_mul = tf.reshape(label_mul, [4,])
+	label = tf.decode_raw(features['label'], tf.float32)
+	print('label is', type(label))
+	label = tf.reshape(label, [2,])
+
+	#print(type(image))
 
 	return image, label, label_mul
 
 def next_batch(filename, batch_size):
 
 	image, label, label_mul = read_and_decode(filename)
-	image_batch, label_batch, label_mul_batch = tf.train.shuffle_batch([image, label, label_mul], batch_size=batch_size, capacity=batch_size*5, min_after_dequeue=batch_size*3)
+	print("decode OK")
+	num_threads = 32
+	min_after_dequeue = 10
+	capacity = num_threads * batch_size + min_after_dequeue
+
+	image_batch, label_batch, label_mul_batch = tf.train.shuffle_batch(
+		[image, label, label_mul], 
+		batch_size=batch_size, 
+		num_threads=num_threads,
+		capacity=capacity, 
+		min_after_dequeue=min_after_dequeue)
+	print("shuffle OK")
 
 	return  image_batch, label_batch, label_mul_batch
 

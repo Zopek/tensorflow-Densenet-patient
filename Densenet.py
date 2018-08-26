@@ -234,6 +234,11 @@ saver = tf.train.Saver(tf.global_variables())
 # config.gpu_options.allow_growth = True
 # session = tf.Session(config=config)
 # """
+print("start read")
+train_image, train_label, train_label_mul = read_data.next_batch(train_filename, batch_size)
+test_image, test_label, test_label_mul = read_data.next_batch(test_filename, batch_size)
+print("end read")
+
 with tf.Session() as sess:
     
 
@@ -241,93 +246,109 @@ with tf.Session() as sess:
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
+        sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
 
-    threads = tf.train.start_queue_runners(sess=sess)
+    coord=tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
     merged = tf.summary.merge_all()
     writer = tf.summary.FileWriter('./logs', sess.graph)
 
-    global_step = 0
-    epoch_learning_rate = init_learning_rate
-    for epoch in range(total_epochs):
-        if epoch == (total_epochs * 0.5) or epoch == (total_epochs * 0.75):
-            epoch_learning_rate = epoch_learning_rate / 10
+    try:
+        while not coord.should_stop():
+            global_step = 0
+            epoch_learning_rate = init_learning_rate
+            for epoch in range(total_epochs):
+                if epoch == (total_epochs * 0.5) or epoch == (total_epochs * 0.75):
+                    epoch_learning_rate = epoch_learning_rate / 10
 
-        total_train_batch = int(train_size / batch_size)
-        total_test_batch = int(test_size / batch_size)
-        # total_batch = int(mnist.train.num_examples / batch_size)
+                total_train_batch = int(train_size / batch_size)
+                total_test_batch = int(test_size / batch_size)
+                # total_batch = int(mnist.train.num_examples / batch_size)
 
-        for step in range(total_train_batch):
-            print("start")
-            # start_time = time.time()
-            batch_x, batch_y, _ = sess.run([read_data.next_batch(train_filename, batch_size)])
-            # batch_x, batch_y = mnist.train.next_batch(batch_size)
-            # print('load time is : ', time.time() - start_time)
-            train_feed_dict = {
-                x: batch_x,
-                label: batch_y,
-                learning_rate: epoch_learning_rate,
-                training_flag : True
-            }
-            print("read OK")
-            _, loss = sess.run([train, cost], feed_dict=train_feed_dict)
+                for step in range(total_train_batch):
+                    # print("start")
+                    # start_time = time.time()
+                    # image_batch, label_batch, label_mul_batch = read_data.next_batch(train_filename, batch_size)
+                    # print("read OK")
+                    batch_x, batch_y, _ = sess.run([train_image, train_label, train_label_mul])
+                    # batch_x, batch_y = mnist.train.next_batch(batch_size)
+                    # print('load time is : ', time.time() - start_time)
+                    # print("run OK")
+                    train_feed_dict = {
+                        x: batch_x,
+                        label: batch_y,
+                        learning_rate: epoch_learning_rate,
+                        training_flag : True
+                    }
+                    # print("read OK")
+                    _, loss = sess.run([train, cost], feed_dict=train_feed_dict)
 
-            if step % 50 == 0:
-                global_step += 50
-                train_summary, train_accuracy = sess.run([merged, accuracy], feed_dict=train_feed_dict)
-                # accuracy.eval(feed_dict=feed_dict)
-                print("Step:", step, "Loss:", loss, "Training accuracy:", train_accuracy)
-                writer.add_summary(train_summary, global_step=epoch)
+                    if step % 50 == 0:
+                        global_step += 50
+                        train_summary, train_accuracy = sess.run([merged, accuracy], feed_dict=train_feed_dict)
+                        # accuracy.eval(feed_dict=feed_dict)
+                        print("Step:", step, "Loss:", loss, "Training accuracy:", train_accuracy)
+                        writer.add_summary(train_summary, global_step=epoch)
 
-            # """
-            # if step  == total_train_batch - 1:
-            #     # test_time = time.time()
-            #     test_images, test_labels = input_data.test_next_batch(filepath, 1)
-            #     test_feed_dict = {
-            #         x: test_images,
-            #         label: test_labels,
-            #         learning_rate: epoch_learning_rate,
-            #         training_flag : False
-            #     }
-            #     # print('test time is : ', time.time() - test_time)
-            # """
-            # print('step time is : ', time.time() - start_time)
+                    # """
+                    # if step  == total_train_batch - 1:
+                    #     # test_time = time.time()
+                    #     test_images, test_labels = input_data.test_next_batch(filepath, 1)
+                    #     test_feed_dict = {
+                    #         x: test_images,
+                    #         label: test_labels,
+                    #         learning_rate: epoch_learning_rate,
+                    #         training_flag : False
+                    #     }
+                    #     # print('test time is : ', time.time() - test_time)
+                    # """
+                    # print('step time is : ', time.time() - start_time)
 
-        for step in range(total_test_batch):
-            test_images, test_labels, _ = sess.run(read_data.next_batch(test_filename, batch_size))
-            test_feed_dict = {
-                x: test_images,
-                label: test_labels,
-                learning_rate: epoch_learning_rate,
-                training_flag : False
-            }
-            if step == 0:
-                accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-            else:
-                accuracy_rates += sess.run(accuracy, feed_dict=test_feed_dict)
+                for step in range(total_test_batch):
+                    test_images, test_labels, _ = sess.run([test_image, test_label, test_label_mul])
+                    test_feed_dict = {
+                        x: test_images,
+                        label: test_labels,
+                        learning_rate: epoch_learning_rate,
+                        training_flag : False
+                    }
+                    if step == 0:
+                        accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
+                    else:
+                        accuracy_rates += sess.run(accuracy, feed_dict=test_feed_dict)
 
-            if step == total_test_batch - 1:
-                print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
-            # """
-            # if step % 5 == 0:
-            #     print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
-            # """
-        # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
+                    if step == total_test_batch - 1:
+                        print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
+                    # """
+                    # if step % 5 == 0:
+                    #     print("Step:", step, "Test accuracy:", accuracy_rates/(step + 1))
+                    # """
+                # print('Epoch:', '%04d' % (epoch + 1), '/ Test Accuracy =', accuracy_rates/total_test_batch)
 
-        # writer.add_summary(test_summary, global_step=epoch)
-        saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1/dense.ckpt')
+                # writer.add_summary(test_summary, global_step=epoch)
+                saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1/dense.ckpt')
 
-        # """
-        # test_images, test_labels = input_data.test_next_batch(filepath, 2)
-        # test_feed_dict = {
-        #     x: test_images,
-        #     label: test_labels,
-        #     learning_rate: epoch_learning_rate,
-        #     training_flag : False
-        # }
-        # accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
-        # print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
-        # """
+                # """
+                # test_images, test_labels = input_data.test_next_batch(filepath, 2)
+                # test_feed_dict = {
+                #     x: test_images,
+                #     label: test_labels,
+                #     learning_rate: epoch_learning_rate,
+                #     training_flag : False
+                # }
+                # accuracy_rates = sess.run(accuracy, feed_dict=test_feed_dict)
+                # print('Epoch:', '%04d' % (epoch + 1), '/ Test2 Accuracy =', accuracy_rates)
+                # """
+    except tf.errors.OutOfRangeError:
+        print('Done training -- epoch limit reached')
+    finally:
+        # When done, ask the threads to stop.
+        coord.request_stop()
+
+ 
+    coord.request_stop()
+    coord.join(threads)
 
     saver.save(sess=sess, save_path='/DB/rhome/qyzheng/Desktop/qyzheng/Tensorflow/model1/dense.ckpt')
