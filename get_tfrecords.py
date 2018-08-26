@@ -4,18 +4,25 @@ import os
 import tensorflow as tf 
 import numpy as np
 
-filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/test'
+filepath = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/final'
 
 
 def get_dir(filepath):
 
-	for h in range(0, 4):
-		dirs = os.listdir(filepath + '/' + str(h))
-		for i in range(len(dirs)):
-			if h == 0 and i == 0:
-				dirs_list = [str(h) + '/' + dirs[i]]
-			else:
-				dirs_list.append(str(h) + '/' + dirs[i])
+	dirs = os.listdir(filepath + '/final')
+	for i in range(len(dirs)):
+		if i == 0:
+			dirs_list = ['final/' + dirs[i]]
+		else:
+			dirs_list.append('final/' + dirs[i])
+
+	# for h in range(0, 4):
+	# 	dirs = os.listdir(filepath + '/' + str(h))
+	# 	for i in range(len(dirs)):
+	# 		if h == 0 and i == 0:
+	# 			dirs_list = [str(h) + '/' + dirs[i]]
+	# 		else:
+	# 			dirs_list.append(str(h) + '/' + dirs[i])
 
 	dirs_list = np.array(dirs_list)
 	perm0 = np.arange(len(dirs_list))
@@ -42,7 +49,7 @@ def multi_label_convert(label):
 
 	return labels.reshape((1, -1))
 
-writer = tf.python_io.TFRecordWriter(filepath + '/test.tfrecords')
+writer = tf.python_io.TFRecordWriter(filepath + '/final.tfrecords')
 dirs = get_dir(filepath)
 
 i = 0
@@ -59,7 +66,7 @@ for filename in dirs:
 	label_bytes = label.tobytes()
 
 	i += 1
-	if i % 100 == 0:
+	if i % 2000 == 0:
 		print(image.shape, ' ', image)
 		print(label_mul.shape, ' ', label_mul)
 		print(label.shape, ' ', label)

@@ -1,3 +1,5 @@
+# -*- coding: UTF-8 -*-
+
 import tensorflow as tf
 from tflearn.layers.conv import global_avg_pool
 # from tensorflow.examples.tutorials.mnist import input_data
@@ -7,8 +9,8 @@ import read_data
 import numpy as np
 import time
 
-filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4'
-test_filename = ''
+# filepath = '/DATA/data/hyguan/liuyuan_spine/data_all/patient_image_4/final'
+test_filename = '/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/final/final.tfrecords'
 test_size = 40882
 # mnist = load_all_sets(filepath)
 
@@ -27,9 +29,7 @@ weight_decay = 1e-4
 # Label & batch_size
 class_num = 2
 batch_size = 32
-
-total_epochs = 100
-
+total_test_batch = int(test_size / batch_size)
 
 def conv_layer(input, filter, kernel, stride=1, layer_name="conv"):
     with tf.name_scope(layer_name):
@@ -224,7 +224,7 @@ tf.summary.scalar('accuracy', accuracy)
 
 saver = tf.train.Saver(tf.global_variables())
 
-test_image, test_label, test_label_mul = read_data.next_batch(test_filename, batch_size)
+test_image, test_label, test_label_mul = read_data.next_batch(test_filename, batch_size, total_test_batch)
 
 # """
 # # delete?
@@ -233,7 +233,8 @@ test_image, test_label, test_label_mul = read_data.next_batch(test_filename, bat
 # session = tf.Session(config=config)
 # """
 with tf.Session() as sess:
-    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/Tensorflow/model')
+    sess.run(tf.local_variables_initializer())
+    ckpt = tf.train.get_checkpoint_state('/DATA/data/qyzheng/Tensorflow/model1')
     saver.restore(sess, ckpt.model_checkpoint_path)
 
     coord=tf.train.Coordinator()
@@ -241,12 +242,11 @@ with tf.Session() as sess:
 
     try:
         while not coord.should_stop():
-            total_test_batch = int(test_size / batch_size)
             accuracy_rates = 0
             # true_negative记录实际为0预测为0的样本数以便计算正确率
             true_negative = 0
             # err_labels = np.array([0, 0, 0, 0])
-            writer = tf.python_io.TFRecordWriter(filepath + '/next.tfrecords')
+            writer = tf.python_io.TFRecordWriter('/DB/rhome/qyzheng/Desktop/qyzheng/patient_image_4/final/next.tfrecords')
             for step in range(total_test_batch):
                 test_images, test_labels, test_labels_mul = sess.run([test_image, test_label, test_label_mul])
                 test_feed_dict = {
@@ -256,7 +256,7 @@ with tf.Session() as sess:
                     training_flag : False
                 }
 
-                if step % 5000 == 0:
+                if step % 300 == 0:
                     print('step', step)
 
                 # false_positive为预测为1的样本，lab_loc为实际为1的样本，目的是找到实际为1预测为1的样本
@@ -290,11 +290,12 @@ with tf.Session() as sess:
             accuracy_rates /= total_test_batch
             print('Test Accuracy =', accuracy_rates)
             print('True Negative is', true_negative)
+
+            coord.request_stop()
     except tf.errors.OutOfRangeError:
         print('Done training -- epoch limit reached')
     finally:
         # When done, ask the threads to stop.
         coord.request_stop()
 
-    coord.request_stop()
     coord.join(threads)

@@ -2,10 +2,9 @@
 
 import tensorflow as tf 
 
-def read_and_decode(filename):
+def read_and_decode(filename, num_epoch):
 
-
-	filename_queue = tf.train.string_input_producer([filename], shuffle=False, num_epochs=100)
+	filename_queue = tf.train.string_input_producer([filename], shuffle=False, num_epochs=num_epoch)
 
 	reader = tf.TFRecordReader()
 	_, serialized_example = reader.read(filename_queue)
@@ -29,9 +28,9 @@ def read_and_decode(filename):
 
 	return image, label, label_mul
 
-def next_batch(filename, batch_size):
+def next_batch(filename, batch_size, num_epoch):
 
-	image, label, label_mul = read_and_decode(filename)
+	image, label, label_mul = read_and_decode(filename, num_epoch)
 	print("decode OK")
 	num_threads = 32
 	min_after_dequeue = 10
